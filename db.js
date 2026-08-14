@@ -9,6 +9,7 @@ let dbMode = 'PG';
 let pgPool = null;
 let mysqlPool = null;
 let sqliteDb = null;
+let pgErrorMsg = null;
 
 async function initDB() {
   const cloudDbUrl = process.env.DATABASE_URL || 'postgres://wedigo_db_user:qEyAa4xxng6pDoiKjDMvGYHLjJA6KQ6C@dpg-d9va2t142hec738h81b0-a.oregon-postgres.render.com/wedigo_db';
@@ -18,7 +19,7 @@ async function initDB() {
     try {
       pgPool = new Pool({
         connectionString: cloudDbUrl,
-        ssl: cloudDbUrl.includes('localhost') || cloudDbUrl.includes('127.0.0.1') ? false : { rejectUnauthorized: false }
+        ssl: { rejectUnauthorized: false }
       });
       await pgPool.query('SELECT NOW()');
       console.log('[Database] Connected to PostgreSQL Cloud Database on Render (SSL Mode)!');
@@ -27,6 +28,7 @@ async function initDB() {
       await seedPostgresData();
       return;
     } catch (err) {
+      pgErrorMsg = `SSL Error: ${err.message}`;
       console.warn(`[Database Warning] PostgreSQL SSL connection failed (${err.message}). Retrying with ssl: false...`);
       try {
         pgPool = new Pool({ connectionString: cloudDbUrl, ssl: false });
@@ -37,6 +39,7 @@ async function initDB() {
         await seedPostgresData();
         return;
       } catch (err2) {
+        pgErrorMsg = `Non-SSL Error: ${err2.message}`;
         console.error(`[Database Error] PostgreSQL connection failed completely: ${err2.message}`);
       }
     }
@@ -541,8 +544,13 @@ function getMode() {
   return dbMode;
 }
 
+function getPgError() {
+  return pgErrorMsg;
+}
+
 module.exports = {
   initDB,
   query,
-  getMode
+  getMode,
+  getPgError
 };
