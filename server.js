@@ -89,6 +89,16 @@ app.post('/api/auth/register', async (req, res) => {
   }
 });
 
+function verifyPassword(inputPassword, storedPassword) {
+  if (!inputPassword || !storedPassword) return false;
+  if (inputPassword === storedPassword) return true;
+  try {
+    return bcrypt.compareSync(inputPassword, storedPassword);
+  } catch (e) {
+    return false;
+  }
+}
+
 app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
@@ -100,10 +110,7 @@ app.post('/api/auth/login', async (req, res) => {
     const admins = await query('SELECT * FROM admins WHERE email = ?', [email]);
     if (admins.length > 0) {
       const admin = admins[0];
-      const isBcryptValid = bcrypt.compareSync(password, admin.password);
-      const isPlainTextValid = (password === admin.password);
-
-      if (isBcryptValid || isPlainTextValid) {
+      if (verifyPassword(password, admin.password)) {
         const token = jwt.sign(
           { id: admin.id, name: admin.name, email: admin.email, role: 'admin' },
           JWT_SECRET,
@@ -119,10 +126,7 @@ app.post('/api/auth/login', async (req, res) => {
 
     if (!user) return res.status(400).json({ error: 'Invalid credentials.' });
 
-    const isBcryptValid = bcrypt.compareSync(password, user.password);
-    const isPlainTextValid = (password === user.password);
-
-    if (!isBcryptValid && !isPlainTextValid) {
+    if (!verifyPassword(password, user.password)) {
       return res.status(400).json({ error: 'Invalid credentials.' });
     }
 
@@ -133,7 +137,7 @@ app.post('/api/auth/login', async (req, res) => {
     );
     res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
   } catch (err) {
-    console.error(err);
+    console.error('Login Error:', err);
     res.status(500).json({ error: 'Server authentication error.' });
   }
 });
