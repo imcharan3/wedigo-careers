@@ -24,8 +24,8 @@ async function initDB() {
       await pgPool.query('SELECT NOW()');
       console.log('[Database] Connected to PostgreSQL Cloud Database on Render (SSL Mode)!');
       dbMode = 'PG';
-      await initPostgresTables();
-      await seedPostgresData();
+      try { await initPostgresTables(); } catch (te) { console.error('Table init warning:', te.message); }
+      try { await seedPostgresData(); } catch (se) { console.error('Seed warning:', se.message); }
       return;
     } catch (err) {
       pgErrorMsg = `SSL Error: ${err.message}`;
@@ -35,8 +35,8 @@ async function initDB() {
         await pgPool.query('SELECT NOW()');
         console.log('[Database] Connected to PostgreSQL Cloud Database on Render (Non-SSL Mode)!');
         dbMode = 'PG';
-        await initPostgresTables();
-        await seedPostgresData();
+        try { await initPostgresTables(); } catch (te) { console.error('Table init warning:', te.message); }
+        try { await seedPostgresData(); } catch (se) { console.error('Seed warning:', se.message); }
         return;
       } catch (err2) {
         pgErrorMsg = `Non-SSL Error: ${err2.message}`;
