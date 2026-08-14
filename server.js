@@ -106,8 +106,9 @@ app.post('/api/auth/login', async (req, res) => {
   }
 
   try {
-    // 1. Check Admins table first
-    const admins = await query('SELECT * FROM admins WHERE email = ?', [email]);
+    const cleanEmail = email.trim();
+    // 1. Check Admins table first (Case-insensitive)
+    const admins = await query('SELECT * FROM admins WHERE LOWER(email) = LOWER(?)', [cleanEmail]);
     if (admins.length > 0) {
       const admin = admins[0];
       if (verifyPassword(password, admin.password)) {
@@ -120,8 +121,8 @@ app.post('/api/auth/login', async (req, res) => {
       }
     }
 
-    // 2. Check Users table (Students)
-    const users = await query('SELECT * FROM users WHERE email = ?', [email]);
+    // 2. Check Users table (Students, Case-insensitive)
+    const users = await query('SELECT * FROM users WHERE LOWER(email) = LOWER(?)', [cleanEmail]);
     const user = users[0];
 
     if (!user) return res.status(400).json({ error: 'Invalid credentials.' });
