@@ -58,6 +58,8 @@ function calculateStartDate(completionDateObj, durationStr) {
     month: 'long',
     day: 'numeric'
   });
+}
+
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', version: '2026-08-14-v3', mode: getMode(), pgError: getPgError() });
 });
