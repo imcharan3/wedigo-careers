@@ -1,22 +1,45 @@
 require('dotenv').config();
+const { Pool } = require('pg');
 const mysql = require('mysql2/promise');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const bcrypt = require('bcryptjs');
 
-const dbConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  port: parseInt(process.env.DB_PORT || '3306'),
-  database: process.env.DB_NAME || 'wedigo_careers'
-};
-
-let dbMode = 'MYSQL';
+let dbMode = 'PG';
+let pgPool = null;
 let mysqlPool = null;
 let sqliteDb = null;
 
 async function initDB() {
+  // 1. Try Render / Cloud PostgreSQL first if DATABASE_URL or PGHOST is present
+  if (process.env.DATABASE_URL || process.env.PGHOST) {
+    try {
+      const connectionString = process.env.DATABASE_URL;
+      pgPool = new Pool({
+        connectionString,
+        ssl: connectionString && connectionString.includes('localhost') ? false : { rejectUnauthorized: false }
+      });
+
+      await pgPool.query('SELECT NOW()');
+      console.log('[Database] Connected to PostgreSQL Cloud Database on Render!');
+      dbMode = 'PG';
+      await initPostgresTables();
+      await seedPostgresData();
+      return;
+    } catch (err) {
+      console.warn(`[Database Warning] PostgreSQL connection failed: ${err.message}`);
+    }
+  }
+
+  // 2. Try MySQL next
+  const dbConfig = {
+    host: process.env.DB_HOST || 'localhost',
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '',
+    port: parseInt(process.env.DB_PORT || '3306'),
+    database: process.env.DB_NAME || 'wedigo_careers'
+  };
+
   try {
     const tempConn = await mysql.createConnection({
       host: dbConfig.host,
@@ -55,8 +78,24 @@ function initSQLite() {
   });
 }
 
+// UNIFIED QUERY ENGINE (Supports PG, MySQL, SQLite)
 async function query(sql, params = []) {
-  if (dbMode === 'MYSQL') {
+  if (dbMode === 'PG') {
+    let paramIndex = 0;
+    let pgSql = sql
+      .replace(/INSERT IGNORE INTO/gi, 'INSERT INTO')
+      .replace(/\?/g, () => `$${++paramIndex}`);
+
+    if (pgSql.toUpperCase().startsWith('INSERT') && !pgSql.toUpperCase().includes('RETURNING')) {
+      pgSql += ' RETURNING id, certificate_id';
+    }
+
+    const res = await pgPool.query(pgSql, params);
+    return res.rows.map(row => ({
+      ...row,
+      insertId: row.id || row.certificate_id
+    }));
+  } else if (dbMode === 'MYSQL') {
     const [rows] = await mysqlPool.query(sql, params);
     return rows;
   } else {
@@ -82,8 +121,72 @@ async function query(sql, params = []) {
   }
 }
 
+async function initPostgresTables() {
+  await pgPool.query(`
+    CREATE TABLE IF NOT EXISTS admins (
+      id SERIAL PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      email VARCHAR(255) NOT NULL UNIQUE,
+      password VARCHAR(255) NOT NULL,
+      role VARCHAR(50) NOT NULL DEFAULT 'admin',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      email VARCHAR(255) NOT NULL UNIQUE,
+      password VARCHAR(255) NOT NULL,
+      role VARCHAR(50) NOT NULL DEFAULT 'student',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS courses (
+      id SERIAL PRIMARY KEY,
+      title VARCHAR(255) NOT NULL,
+      category VARCHAR(100) NOT NULL,
+      duration VARCHAR(50) NOT NULL,
+      description TEXT NOT NULL,
+      modules TEXT NOT NULL,
+      modules_content TEXT NULL,
+      quiz_data TEXT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS enrollments (
+      id SERIAL PRIMARY KEY,
+      user_id INT NOT NULL,
+      course_id INT NOT NULL,
+      progress INT DEFAULT 0,
+      completed INT DEFAULT 0,
+      passed INT DEFAULT 0,
+      attempts_count INT DEFAULT 0,
+      highest_score INT DEFAULT 0,
+      completed_modules TEXT NULL,
+      start_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      completed_at TIMESTAMP NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(user_id, course_id)
+    );
+    CREATE TABLE IF NOT EXISTS certificates (
+      certificate_id VARCHAR(100) PRIMARY KEY,
+      user_id INT NOT NULL,
+      user_name VARCHAR(255) NOT NULL,
+      user_email VARCHAR(255) NOT NULL,
+      course_id INT NOT NULL,
+      course_title VARCHAR(255) NOT NULL,
+      course_duration VARCHAR(50) NOT NULL,
+      start_date VARCHAR(100) NOT NULL,
+      completion_date VARCHAR(100) NOT NULL,
+      issue_date VARCHAR(100) NOT NULL,
+      score INT DEFAULT 100,
+      verification_hash VARCHAR(255) NOT NULL,
+      signatory_name VARCHAR(255) DEFAULT 'Neethu Allampati',
+      signatory_title VARCHAR(255) DEFAULT 'Director of Academics',
+      status VARCHAR(50) DEFAULT 'ACTIVE',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+}
+
 async function initMySQLTables() {
-  // Admins Table
   await mysqlPool.query(`
     CREATE TABLE IF NOT EXISTS admins (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -93,10 +196,6 @@ async function initMySQLTables() {
       role VARCHAR(50) NOT NULL DEFAULT 'admin',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-  `);
-
-  // Users Table
-  await mysqlPool.query(`
     CREATE TABLE IF NOT EXISTS users (
       id INT AUTO_INCREMENT PRIMARY KEY,
       name VARCHAR(255) NOT NULL,
@@ -105,10 +204,6 @@ async function initMySQLTables() {
       role VARCHAR(50) NOT NULL DEFAULT 'student',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-  `);
-
-  // Courses Table
-  await mysqlPool.query(`
     CREATE TABLE IF NOT EXISTS courses (
       id INT AUTO_INCREMENT PRIMARY KEY,
       title VARCHAR(255) NOT NULL,
@@ -125,7 +220,6 @@ async function initMySQLTables() {
   try { await mysqlPool.query(`ALTER TABLE courses ADD COLUMN modules_content LONGTEXT NULL`); } catch (e) {}
   try { await mysqlPool.query(`ALTER TABLE courses ADD COLUMN quiz_data LONGTEXT NULL`); } catch (e) {}
 
-  // Enrollments Table
   await mysqlPool.query(`
     CREATE TABLE IF NOT EXISTS enrollments (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -144,13 +238,6 @@ async function initMySQLTables() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   `);
 
-  try { await mysqlPool.query(`ALTER TABLE enrollments ADD COLUMN passed TINYINT(1) DEFAULT 0`); } catch (e) {}
-  try { await mysqlPool.query(`ALTER TABLE enrollments ADD COLUMN attempts_count INT DEFAULT 0`); } catch (e) {}
-  try { await mysqlPool.query(`ALTER TABLE enrollments ADD COLUMN highest_score INT DEFAULT 0`); } catch (e) {}
-  try { await mysqlPool.query(`ALTER TABLE enrollments ADD COLUMN completed_modules TEXT NULL`); } catch (e) {}
-  try { await mysqlPool.query(`ALTER TABLE enrollments ADD COLUMN start_date DATETIME DEFAULT CURRENT_TIMESTAMP`); } catch (e) {}
-
-  // Certificates Table
   await mysqlPool.query(`
     CREATE TABLE IF NOT EXISTS certificates (
       certificate_id VARCHAR(100) PRIMARY KEY,
@@ -171,10 +258,6 @@ async function initMySQLTables() {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   `);
-
-  try { await mysqlPool.query(`ALTER TABLE certificates ADD COLUMN start_date VARCHAR(100) NOT NULL DEFAULT ''`); } catch (e) {}
-  try { await mysqlPool.query(`ALTER TABLE certificates ADD COLUMN completion_date VARCHAR(100) NOT NULL DEFAULT ''`); } catch (e) {}
-  try { await mysqlPool.query(`ALTER TABLE certificates ADD COLUMN score INT DEFAULT 100`); } catch (e) {}
 }
 
 async function initSQLiteTables() {
@@ -254,13 +337,35 @@ async function initSQLiteTables() {
   });
 }
 
+async function seedPostgresData() {
+  const adminEmail = 'admin@wedigocareers.com';
+  const admins = await query('SELECT id FROM admins WHERE email = $1', [adminEmail]);
+  if (admins.length === 0) {
+    const hashedAdminPassword = bcrypt.hashSync('admin123', 10);
+    await query('INSERT INTO admins (name, email, password, role) VALUES ($1, $2, $3, $4)', ['Platform Admin', adminEmail, hashedAdminPassword, 'admin']);
+  }
+
+  const studentEmail = 'student@wedigocareers.com';
+  const students = await query('SELECT id FROM users WHERE email = $1', [studentEmail]);
+  if (students.length === 0) {
+    const hashedStudentPassword = bcrypt.hashSync('student123', 10);
+    await query('INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4)', ['Jane Doe', studentEmail, hashedStudentPassword, 'student']);
+  }
+
+  const courseRows = await query('SELECT COUNT(*) as count FROM courses');
+  if (parseInt(courseRows[0].count) === 0) {
+    await seedCoursesData(async (c) => {
+      await query('INSERT INTO courses (title, category, duration, description, modules, modules_content, quiz_data) VALUES ($1, $2, $3, $4, $5, $6, $7)', [c.title, c.category, c.duration, c.description, c.modules, c.modules_content, c.quiz_data]);
+    });
+  }
+}
+
 async function seedMySQLData() {
   const adminEmail = 'admin@wedigocareers.com';
   const [admins] = await mysqlPool.query('SELECT id FROM admins WHERE email = ?', [adminEmail]);
   if (admins.length === 0) {
     const hashedAdminPassword = bcrypt.hashSync('admin123', 10);
     await mysqlPool.query('INSERT INTO admins (name, email, password, role) VALUES (?, ?, ?, ?)', ['Platform Admin', adminEmail, hashedAdminPassword, 'admin']);
-    console.log('[Database] Seeded Admin Account into `admins` table: admin@wedigocareers.com / admin123');
   }
 
   const studentEmail = 'student@wedigocareers.com';
