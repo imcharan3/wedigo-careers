@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard | Wedigo Careers</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <a href="index.html" class="brand-logo">
+      <div class="logo-icon"><i class="fas fa-user-shield"></i></div>
+      <span>Wedigo<span style="color: var(--accent-cyan);">Admin</span></span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="index.html" class="nav-link"><i class="fas fa-globe"></i> Main Portal</a></li>
+      <li><a href="verify.html" class="nav-link"><i class="fas fa-qrcode"></i> Public Verify</a></li>
+    </ul>
+    <div id="navRight"></div>
+  </nav>
+
+  <div class="container" style="padding-top: 2rem;">
+    
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+      <div>
+        <span class="card-tag" style="background: rgba(99, 102, 241, 0.2); color: var(--primary-glow);">System Overview</span>
+        <h1>Admin Control Dashboard</h1>
+      </div>
+      <div style="display: flex; gap: 0.75rem;">
+        <button onclick="App.openModal('addCourseModal')" class="btn btn-primary"><i class="fas fa-plus-circle"></i> Add New Course</button>
+        <button onclick="App.openModal('manualIssueModal')" class="btn btn-gold"><i class="fas fa-award"></i> Issue Manual Certificate</button>
+      </div>
+    </div>
+
+    <!-- STATS GRID -->
+    <div class="admin-stats-grid">
+      <div class="stat-card">
+        <span class="card-tag">Users</span>
+        <div id="statUsers" class="stat-number">0</div>
+        <p style="color: var(--text-muted); font-size: 0.85rem;">Registered Platform Accounts</p>
+      </div>
+      <div class="stat-card">
+        <span class="card-tag" style="background: rgba(245, 158, 11, 0.15); color: var(--accent-gold);">Certificates</span>
+        <div id="statCerts" class="stat-number" style="color: var(--accent-gold);">0</div>
+        <p style="color: var(--text-muted); font-size: 0.85rem;">Issued Verifiable Certificates</p>
+      </div>
+      <div class="stat-card">
+        <span class="card-tag" style="background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan);">Catalog</span>
+        <div id="statCourses" class="stat-number" style="color: var(--accent-cyan);">0</div>
+        <p style="color: var(--text-muted); font-size: 0.85rem;">Active Courses</p>
+      </div>
+      <div class="stat-card">
+        <span class="card-tag" style="background: rgba(16, 185, 129, 0.15); color: var(--accent-emerald);">Enrollments</span>
+        <div id="statEnrollments" class="stat-number" style="color: var(--accent-emerald);">0</div>
+        <p style="color: var(--text-muted); font-size: 0.85rem;">Course Completions</p>
+      </div>
+    </div>
+
+    <!-- ISSUED CERTIFICATES TABLE -->
+    <section class="mb-4">
+      <h2 style="margin-bottom: 1rem; color: var(--accent-gold);"><i class="fas fa-award"></i> All Issued Certificates</h2>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Certificate ID</th>
+              <th>Recipient</th>
+              <th>Course Title</th>
+              <th>Issue Date</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="adminCertificatesTable">
+            <!-- Loaded via admin.js -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- REGISTERED USERS TABLE -->
+    <section class="mb-4">
+      <h2 style="margin-bottom: 1rem;"><i class="fas fa-users"></i> Platform Users</h2>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Joined Date</th>
+            </tr>
+          </thead>
+          <tbody id="adminUsersTable">
+            <!-- Loaded via admin.js -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- COURSES TABLE -->
+    <section class="mb-4">
+      <h2 style="margin-bottom: 1rem; color: var(--accent-cyan);"><i class="fas fa-book"></i> Active Courses</h2>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Title</th>
+              <th>Category</th>
+              <th>Duration</th>
+            </tr>
+          </thead>
+          <tbody id="adminCoursesTable">
+            <!-- Loaded via admin.js -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- ADD COURSE MODAL -->
+  <div id="addCourseModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3><i class="fas fa-folder-plus"></i> Add New Course</h3>
+        <button onclick="App.closeModal('addCourseModal')" class="modal-close">&times;</button>
+      </div>
+      <form onsubmit="Admin.handleAddCourse(event)">
+        <div class="form-group">
+          <label class="form-label">Course Title</label>
+          <input type="text" id="newCourseTitle" class="form-input" placeholder="e.g. AI & Machine Learning Foundations" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <input type="text" id="newCourseCategory" class="form-input" placeholder="e.g. Artificial Intelligence" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Duration</label>
+          <input type="text" id="newCourseDuration" class="form-input" placeholder="e.g. 6 Weeks" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea id="newCourseDesc" class="form-input" rows="3" placeholder="Brief course description..." required style="resize: vertical;"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Create Course</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MANUAL ISSUE MODAL -->
+  <div id="manualIssueModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3><i class="fas fa-award"></i> Manual Certificate Issuance</h3>
+        <button onclick="App.closeModal('manualIssueModal')" class="modal-close">&times;</button>
+      </div>
+      <form onsubmit="Admin.handleManualIssue(event)">
+        <div class="form-group">
+          <label class="form-label">Recipient Full Name</label>
+          <input type="text" id="manualName" class="form-input" placeholder="John Smith" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Recipient Email</label>
+          <input type="email" id="manualEmail" class="form-input" placeholder="john@example.com" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Course / Internship Title</label>
+          <input type="text" id="manualCourse" class="form-input" placeholder="Software Engineering Internship" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Duration</label>
+          <input type="text" id="manualDuration" class="form-input" placeholder="8 Weeks" required>
+        </div>
+        <button type="submit" class="btn btn-gold" style="width: 100%;">Issue Certificate</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/auth.js"></script>
+  <script src="js/certificate.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

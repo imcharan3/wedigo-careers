@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wedigo Careers | Online Learning & Verifiable Certificates</title>
+  <meta name="description" content="Enroll in industry-leading technology courses, complete interactive video modules, pass knowledge assessments with 80%+ score, and earn verifiable digital certificates.">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <a href="index.html" class="brand-logo">
+      <div class="logo-icon"><i class="fas fa-certificate"></i></div>
+      <span>Wedigo<span style="color: var(--accent-cyan);">Careers</span></span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="#courses" class="nav-link active">Courses</a></li>
+      <li><a href="verify.html" class="nav-link"><i class="fas fa-qrcode"></i> Verify Certificate</a></li>
+    </ul>
+    <div id="navRight">
+      <!-- Auth buttons dynamically rendered -->
+    </div>
+  </nav>
+
+  <!-- HERO SECTION -->
+  <header class="hero">
+    <div class="badge"><i class="fas fa-shield-alt"></i> Verifiable Certificates & Interactive Assessments</div>
+    <h1 class="hero-title">Master Tech Skills, Pass Assessments & Earn Verifiable Certificates</h1>
+    <p class="hero-subtitle">Complete interactive video modules, pass the 80% knowledge assessment test (max 5 attempts), and claim official certificates signed by Neethu Allampati with instant QR verification.</p>
+    <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+      <a href="#courses" class="btn btn-primary btn-lg"><i class="fas fa-rocket"></i> Explore Courses</a>
+      <a href="verify.html" class="btn btn-gold btn-lg"><i class="fas fa-qrcode"></i> Scan & Verify Certificate</a>
+    </div>
+  </header>
+
+  <div class="container">
+    
+    <!-- MY CERTIFICATES SECTION (For Logged In Users) -->
+    <section id="myCertificatesSection" class="hidden mb-4">
+      <h2 style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem;">
+        <i class="fas fa-award" style="color: var(--accent-gold);"></i> My Earned Certificates
+      </h2>
+      <div id="myCertificatesList" class="grid-3"></div>
+    </section>
+
+    <!-- COURSES CATALOG SECTION -->
+    <section id="courses">
+      <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem;">
+        <div>
+          <span class="card-tag">Curriculum 2026</span>
+          <h2>Featured Internship & Training Courses</h2>
+        </div>
+      </div>
+      <div id="coursesGrid" class="grid-3">
+        <!-- Loaded dynamically via app.js -->
+      </div>
+    </section>
+
+  </div>
+
+  <!-- COURSE LEARNING WORKSPACE MODAL -->
+  <div id="playerModal" class="modal-overlay">
+    <div class="modal player-modal">
+      <div class="modal-header">
+        <div>
+          <span id="playerCategory" class="card-tag">Category</span>
+          <h2 id="playerCourseTitle" style="font-size: 1.5rem; margin-top: 0.25rem;">Course Title</h2>
+        </div>
+        <button onclick="App.closeModal('playerModal')" class="modal-close">&times;</button>
+      </div>
+      
+      <!-- Progress Bar -->
+      <div style="background: rgba(255, 255, 255, 0.05); height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 1.5rem;">
+        <div id="playerProgressBar" style="background: linear-gradient(90deg, var(--primary), var(--accent-cyan)); height: 100%; width: 0%; transition: width 0.4s ease;"></div>
+      </div>
+
+      <div class="player-grid">
+        <!-- Sidebar Modules List -->
+        <div class="module-sidebar">
+          <h4 style="margin-bottom: 1rem; color: var(--accent-cyan);"><i class="fas fa-list-ul"></i> Course Modules</h4>
+          <div id="modulesSidebarList">
+            <!-- Rendered by app.js -->
+          </div>
+
+          <div style="margin-top: 1.5rem; border-top: 1px solid var(--glass-border); padding-top: 1rem;">
+            <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+              <i class="fas fa-history"></i> Quiz Attempts: <strong id="attemptsCounter" style="color: var(--accent-gold);">0 / 5</strong>
+            </div>
+            <button id="startQuizBtn" onclick="App.openQuizModal()" class="btn btn-gold" style="width: 100%;">
+              <i class="fas fa-vial"></i> Take Knowledge Assessment
+            </button>
+          </div>
+        </div>
+
+        <!-- Main Module Video & Lesson Viewer -->
+        <div>
+          <div class="video-container">
+            <iframe id="moduleVideoFrame" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+          </div>
+
+          <div class="card" style="margin-bottom: 1.5rem; border-color: var(--glass-border);">
+            <h3 id="moduleLessonTitle" style="color: var(--primary-glow); margin-bottom: 0.5rem;">Module Title</h3>
+            <p id="moduleLessonSummary" style="color: var(--text-muted); margin-bottom: 1rem;">Summary text...</p>
+            <div id="moduleLessonContent" style="color: #e2e8f0; font-size: 0.95rem; line-height: 1.7;">
+              <!-- Rich lesson content -->
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span id="moduleStatusText" style="color: var(--text-muted); font-size: 0.85rem;"></span>
+            <button id="markModuleCompleteBtn" onclick="App.markActiveModuleComplete()" class="btn btn-primary">
+              <i class="fas fa-check-circle"></i> Mark Module Complete
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUIZ ASSESSMENT MODAL -->
+  <div id="quizModal" class="modal-overlay">
+    <div class="modal quiz-container" style="max-width: 750px;">
+      <div class="modal-header">
+        <div>
+          <span class="attempts-badge"><i class="fas fa-shield-alt"></i> Pass Mark: 80%  |  Attempts Left: <span id="quizAttemptsLeftVal">5</span></span>
+          <h2 id="quizCourseTitle" style="font-size: 1.5rem; margin-top: 0.5rem;">Knowledge Assessment Test</h2>
+        </div>
+        <button onclick="App.closeModal('quizModal')" class="modal-close">&times;</button>
+      </div>
+
+      <div id="quizQuestionsContainer" style="margin-bottom: 2rem;">
+        <!-- Quiz questions rendered by app.js -->
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <button onclick="App.closeModal('quizModal')" class="btn btn-secondary">Cancel</button>
+        <button onclick="App.submitQuiz()" class="btn btn-gold btn-lg">
+          <i class="fas fa-paper-plane"></i> Submit Assessment for Grading
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUIZ RESULT MODAL -->
+  <div id="quizResultModal" class="modal-overlay">
+    <div class="modal text-center" style="max-width: 500px;">
+      <div id="quizResultBadge" class="status-badge status-valid mb-4">
+        <i class="fas fa-trophy"></i> ASSESSMENT PASSED!
+      </div>
+
+      <h2 id="quizResultScore" style="font-size: 3rem; color: var(--accent-gold); margin-bottom: 0.5rem;">100%</h2>
+      <p id="quizResultMessage" style="color: var(--text-muted); margin-bottom: 1.5rem;">Congratulations! You passed the assessment and unlocked your verifiable certificate.</p>
+
+      <div id="quizResultActions" style="display: flex; gap: 0.75rem; justify-content: center;">
+        <!-- Buttons rendered dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- CERTIFICATE CANVAS PREVIEW MODAL -->
+  <div id="certModal" class="modal-overlay">
+    <div class="modal cert-modal">
+      <div class="modal-header">
+        <h3 style="color: var(--accent-gold);"><i class="fas fa-award"></i> Official Digital Certificate</h3>
+        <button onclick="App.closeModal('certModal')" class="modal-close">&times;</button>
+      </div>
+      
+      <div class="canvas-wrapper">
+        <canvas id="certificateCanvas"></canvas>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <p style="color: var(--text-muted); font-size: 0.9rem;">
+          <i class="fas fa-qrcode" style="color: var(--accent-cyan);"></i> Verification URL encoded with Neethu Allampati's signatory stamp.
+        </p>
+        <div style="display: flex; gap: 0.75rem;">
+          <button onclick="App.downloadActiveCert()" class="btn btn-gold">
+            <i class="fas fa-download"></i> Download PNG Certificate
+          </button>
+          <button onclick="App.closeModal('certModal')" class="btn btn-secondary">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOGIN MODAL -->
+  <div id="loginModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3><i class="fas fa-sign-in-alt"></i> Student & Admin Sign In</h3>
+        <button onclick="App.closeModal('loginModal')" class="modal-close">&times;</button>
+      </div>
+      <form onsubmit="App.handleLogin(event)">
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input type="email" id="loginEmail" class="form-input" placeholder="student@wedigocareers.com" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" id="loginPassword" class="form-input" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Sign In</button>
+        <p style="text-align: center; margin-top: 1rem; font-size: 0.85rem; color: var(--text-muted);">
+          Default Demo Accounts:<br>
+          Student: <code>student@wedigocareers.com</code> / <code>student123</code><br>
+          Admin: <code>admin@wedigocareers.com</code> / <code>admin123</code>
+        </p>
+      </form>
+    </div>
+  </div>
+
+  <!-- REGISTER MODAL -->
+  <div id="registerModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3><i class="fas fa-user-plus"></i> Create Student Account</h3>
+        <button onclick="App.closeModal('registerModal')" class="modal-close">&times;</button>
+      </div>
+      <form onsubmit="App.handleRegister(event)">
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input type="text" id="regName" class="form-input" placeholder="Jane Doe" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input type="email" id="regEmail" class="form-input" placeholder="jane@example.com" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" id="regPassword" class="form-input" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Create Account</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/auth.js"></script>
+  <script src="js/certificate.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

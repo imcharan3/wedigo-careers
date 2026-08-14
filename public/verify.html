@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Certificate Verification Portal | Wedigo Careers</title>
+  <meta name="description" content="Verify the authenticity of digital certificates issued by Wedigo Careers using instant database verification.">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <a href="index.html" class="brand-logo">
+      <div class="logo-icon"><i class="fas fa-certificate"></i></div>
+      <span>Wedigo<span style="color: var(--accent-cyan);">Careers</span></span>
+    </a>
+    <div id="navRight">
+      <!-- Auth state -->
+    </div>
+  </nav>
+
+  <div class="container" style="max-width: 900px; padding-top: 3rem;">
+    
+    <!-- SEARCH FORM -->
+    <div class="card text-center mb-4">
+      <div class="badge"><i class="fas fa-search"></i> Public Verification Portal</div>
+      <h1 style="font-size: 2.2rem; margin-bottom: 1rem;">Verify Certificate Authenticity</h1>
+      <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Enter the unique Certificate ID below or scan the QR Code on the certificate to query the authentic database registry.</p>
+      
+      <form onsubmit="verifyCertificateFromInput(event)" style="display: flex; gap: 0.75rem; max-width: 550px; margin: 0 auto;">
+        <input type="text" id="certSearchInput" class="form-input" placeholder="e.g. CERT-2026-780DQR" required style="font-weight: 600; text-transform: uppercase;">
+        <button type="submit" class="btn btn-gold" style="white-space: nowrap;"><i class="fas fa-shield-alt"></i> Verify ID</button>
+      </form>
+    </div>
+
+    <!-- VERIFICATION RESULT CARD -->
+    <div id="verifyResult" class="hidden card verify-card">
+      <div id="statusBadge" class="status-badge status-valid">
+        <i class="fas fa-check-circle"></i> VERIFIED AUTHENTIC CERTIFICATE
+      </div>
+      
+      <h2 id="recipientName" style="color: var(--primary-glow); font-size: 2rem; margin-bottom: 0.25rem;">Recipient Name</h2>
+      <p id="courseTitle" style="color: var(--accent-cyan); font-size: 1.25rem; font-weight: 600;">Course Title</p>
+
+      <div class="verify-details-grid">
+        <div class="verify-field">
+          <label>Certificate ID</label>
+          <span id="certIdVal">-</span>
+        </div>
+        <div class="verify-field">
+          <label>Start Date</label>
+          <span id="startDateVal">-</span>
+        </div>
+        <div class="verify-field">
+          <label>Completion Date</label>
+          <span id="completionDateVal">-</span>
+        </div>
+        <div class="verify-field">
+          <label>Assessment Score</label>
+          <span id="scoreVal" style="color: var(--accent-gold);">-</span>
+        </div>
+        <div class="verify-field">
+          <label>Duration</label>
+          <span id="durationVal">-</span>
+        </div>
+        <div class="verify-field">
+          <label>Signatory</label>
+          <span id="signatoryVal">Neethu Allampati</span>
+        </div>
+      </div>
+
+      <div style="background: rgba(0,0,0,0.4); padding: 0.75rem; border-radius: var(--radius-sm); margin-bottom: 1.5rem; text-align: left;">
+        <label style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Cryptographic Hash (SHA-256)</label>
+        <div id="hashVal" style="font-family: monospace; font-size: 0.8rem; color: #a5b4fc; word-break: break-all;">-</div>
+      </div>
+
+      <!-- Live Canvas Preview -->
+      <h3 style="margin: 1.5rem 0 1rem; color: var(--accent-gold);"><i class="fas fa-image"></i> Rendered Certificate Preview</h3>
+      <div class="canvas-wrapper">
+        <canvas id="certificateCanvas"></canvas>
+      </div>
+
+      <div style="margin-top: 1.5rem;">
+        <button onclick="CertificateEngine.downloadPNG(document.getElementById('certIdVal').innerText)" class="btn btn-gold">
+          <i class="fas fa-download"></i> Download PNG Certificate
+        </button>
+      </div>
+    </div>
+
+    <!-- NOT FOUND CARD -->
+    <div id="notFoundResult" class="hidden card text-center" style="border-color: rgba(244, 63, 94, 0.4);">
+      <div class="status-badge status-revoked">
+        <i class="fas fa-exclamation-triangle"></i> RECORD NOT FOUND OR INVALID
+      </div>
+      <p id="notFoundMsg" style="color: var(--text-muted); margin-top: 1rem;">No matching certificate record exists in the database. Please verify the ID.</p>
+    </div>
+
+  </div>
+
+  <script src="js/auth.js"></script>
+  <script src="js/certificate.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      Auth.updateNav();
+      const urlParams = new URLSearchParams(window.location.search);
+      const idParam = urlParams.get('id');
+      if (idParam) {
+        document.getElementById('certSearchInput').value = idParam;
+        performVerification(idParam);
+      }
+    });
+
+    function verifyCertificateFromInput(e) {
+      e.preventDefault();
+      const certId = document.getElementById('certSearchInput').value.trim();
+      if (certId) {
+        window.history.pushState({}, '', `verify.html?id=${encodeURIComponent(certId)}`);
+        performVerification(certId);
+      }
+    }
+
+    async function performVerification(certId) {
+      const resultCard = document.getElementById('verifyResult');
+      const notFoundCard = document.getElementById('notFoundResult');
+
+      resultCard.classList.add('hidden');
+      notFoundCard.classList.add('hidden');
+
+      try {
+        const res = await fetch(`/api/certificates/verify/${encodeURIComponent(certId)}`);
+        const data = await res.json();
+
+        if (data.verified && data.status === 'ACTIVE') {
+          const cert = data.certificate;
+          document.getElementById('recipientName').innerText = cert.user_name;
+          document.getElementById('courseTitle').innerText = cert.course_title;
+          document.getElementById('certIdVal').innerText = cert.certificate_id;
+          document.getElementById('startDateVal').innerText = cert.start_date || cert.issue_date;
+          document.getElementById('completionDateVal').innerText = cert.completion_date || cert.issue_date;
+          document.getElementById('scoreVal').innerText = `${cert.score || 100}%`;
+          document.getElementById('durationVal').innerText = cert.course_duration;
+          document.getElementById('signatoryVal').innerText = cert.signatory_name || 'Neethu Allampati';
+          document.getElementById('hashVal').innerText = cert.verification_hash;
+
+          const badge = document.getElementById('statusBadge');
+          badge.className = 'status-badge status-valid';
+          badge.innerHTML = `<i class="fas fa-check-circle"></i> VERIFIED AUTHENTIC CERTIFICATE`;
+
+          resultCard.classList.remove('hidden');
+
+          setTimeout(() => {
+            CertificateEngine.renderCanvas(cert, 'certificateCanvas');
+          }, 100);
+        } else if (data.verified && data.status === 'REVOKED') {
+          const cert = data.certificate;
+          document.getElementById('recipientName').innerText = cert.user_name;
+          document.getElementById('courseTitle').innerText = cert.course_title;
+          document.getElementById('certIdVal').innerText = cert.certificate_id;
+          document.getElementById('startDateVal').innerText = cert.start_date || cert.issue_date;
+          document.getElementById('completionDateVal').innerText = cert.completion_date || cert.issue_date;
+          document.getElementById('scoreVal').innerText = `${cert.score || 100}%`;
+          document.getElementById('durationVal').innerText = cert.course_duration;
+          document.getElementById('signatoryVal').innerText = cert.signatory_name || 'Neethu Allampati';
+          document.getElementById('hashVal').innerText = cert.verification_hash;
+
+          const badge = document.getElementById('statusBadge');
+          badge.className = 'status-badge status-revoked';
+          badge.innerHTML = `<i class="fas fa-ban"></i> CERTIFICATE REVOKED BY ISSUER`;
+
+          resultCard.classList.remove('hidden');
+
+          setTimeout(() => {
+            CertificateEngine.renderCanvas(cert, 'certificateCanvas');
+          }, 100);
+        } else {
+          document.getElementById('notFoundMsg').innerText = data.error || 'Invalid Certificate ID.';
+          notFoundCard.classList.remove('hidden');
+        }
+      } catch (err) {
+        document.getElementById('notFoundMsg').innerText = 'Server error during verification.';
+        notFoundCard.classList.remove('hidden');
+      }
+    }
+  </script>
+</body>
+</html>
