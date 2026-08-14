@@ -11,6 +11,11 @@ const App = {
     this.checkUserEnrollments();
   },
 
+  toggleMobileMenu() {
+    const nav = document.getElementById('navbar');
+    if (nav) nav.classList.toggle('mobile-open');
+  },
+
   async loadCourses() {
     const grid = document.getElementById('coursesGrid');
     if (!grid) return;
