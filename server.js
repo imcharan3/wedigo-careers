@@ -60,6 +60,10 @@ function calculateStartDate(completionDateObj, durationStr) {
   });
 }
 
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', version: '2026-08-14-v2', mode: getMode() });
+});
+
 // API ROUTES
 
 // Auth Routes
