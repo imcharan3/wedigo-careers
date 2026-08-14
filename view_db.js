@@ -1,52 +1,73 @@
 require('dotenv').config();
+const { Pool } = require('pg');
 const mysql = require('mysql2/promise');
+const sqlite3 = require('sqlite3').verbose();
+const path = require('path');
 
-const dbConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  port: parseInt(process.env.DB_PORT || '3306'),
-  database: process.env.DB_NAME || 'wedigo_careers'
-};
-
-async function viewMySQLDatabase() {
+async function inspect() {
   console.log('====================================================');
-  console.log('    WEDIGO CAREERS - MYSQL DATABASE INSPECTOR       ');
+  console.log('    WEDIGO CAREERS - CLOUD DATABASE INSPECTOR       ');
   console.log('====================================================\n');
+
+  if (process.env.DATABASE_URL || process.env.PGHOST) {
+    console.log('[Engine: PostgreSQL Cloud Database]\n');
+    const pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.DATABASE_URL && process.env.DATABASE_URL.includes('localhost') ? false : { rejectUnauthorized: false }
+    });
+
+    console.log('--- [ADMINS TABLE] ---');
+    const admins = await pool.query('SELECT id, name, email, role, created_at FROM admins');
+    console.table(admins.rows);
+
+    console.log('\n--- [USERS TABLE (STUDENTS)] ---');
+    const users = await pool.query('SELECT id, name, email, role, created_at FROM users');
+    console.table(users.rows);
+
+    console.log('\n--- [COURSES TABLE] ---');
+    const courses = await pool.query('SELECT id, title, category, duration FROM courses');
+    console.table(courses.rows);
+
+    console.log('\n--- [CERTIFICATES TABLE] ---');
+    const certs = await pool.query('SELECT certificate_id, user_name, user_email, course_title, issue_date, signatory_name, status FROM certificates');
+    console.table(certs.rows);
+
+    await pool.end();
+    return;
+  }
+
+  // MySQL Fallback
+  const dbConfig = {
+    host: process.env.DB_HOST || 'localhost',
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '',
+    port: parseInt(process.env.DB_PORT || '3306'),
+    database: process.env.DB_NAME || 'wedigo_careers'
+  };
 
   try {
     const conn = await mysql.createConnection(dbConfig);
 
-    // 1. Admins Table
     console.log('--- [ADMINS TABLE] ---');
     const [admins] = await conn.query('SELECT id, name, email, role, created_at FROM admins');
     console.table(admins);
 
-    // 2. Users Table
     console.log('\n--- [USERS TABLE (STUDENTS)] ---');
     const [users] = await conn.query('SELECT id, name, email, role, created_at FROM users');
     console.table(users);
 
-    // 2. Courses Table
     console.log('\n--- [COURSES TABLE] ---');
     const [courses] = await conn.query('SELECT id, title, category, duration FROM courses');
     console.table(courses);
 
-    // 3. Certificates Table
     console.log('\n--- [CERTIFICATES TABLE] ---');
     const [certs] = await conn.query('SELECT certificate_id, user_name, user_email, course_title, issue_date, signatory_name, status FROM certificates');
     console.table(certs);
 
-    // 4. Enrollments Table
-    console.log('\n--- [ENROLLMENTS TABLE] ---');
-    const [enrollments] = await conn.query('SELECT * FROM enrollments');
-    console.table(enrollments);
-
     await conn.end();
   } catch (err) {
-    console.error('MySQL Error:', err.message);
-    console.log('\nPlease make sure MySQL Server is running on localhost:3306.');
+    console.error('Database connection error:', err.message);
   }
 }
 
-viewMySQLDatabase();
+inspect();
