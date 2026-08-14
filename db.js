@@ -190,6 +190,13 @@ async function initPostgresTables() {
     );
   `);
 
+  try {
+    await pgPool.query('SELECT certificate_id FROM certificates LIMIT 1');
+  } catch (e) {
+    console.log('[Schema Fix] Rebuilding certificates table...');
+    await pgPool.query('DROP TABLE IF EXISTS certificates CASCADE');
+  }
+
   await pgPool.query(`
     CREATE TABLE IF NOT EXISTS certificates (
       certificate_id VARCHAR(100) PRIMARY KEY,
