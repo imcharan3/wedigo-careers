@@ -172,9 +172,6 @@ async function initPostgresTables() {
     );
   `);
 
-  try { await pgPool.query(`ALTER TABLE courses ADD COLUMN modules_content TEXT NULL`); } catch (e) {}
-  try { await pgPool.query(`ALTER TABLE courses ADD COLUMN quiz_data TEXT NULL`); } catch (e) {}
-
   await pgPool.query(`
     CREATE TABLE IF NOT EXISTS enrollments (
       id SERIAL PRIMARY KEY,
@@ -193,57 +190,34 @@ async function initPostgresTables() {
     );
   `);
 
+  await pgPool.query(`
+    CREATE TABLE IF NOT EXISTS certificates (
+      certificate_id VARCHAR(100) PRIMARY KEY,
+      user_id INT NOT NULL,
+      user_name VARCHAR(255) NOT NULL,
+      user_email VARCHAR(255) NOT NULL,
+      course_id INT NOT NULL,
+      course_title VARCHAR(255) NOT NULL,
+      course_duration VARCHAR(50) NOT NULL,
+      start_date VARCHAR(100) NOT NULL DEFAULT '',
+      completion_date VARCHAR(100) NOT NULL DEFAULT '',
+      issue_date VARCHAR(100) NOT NULL,
+      score INT DEFAULT 100,
+      verification_hash VARCHAR(255) NOT NULL,
+      signatory_name VARCHAR(255) DEFAULT 'Neethu Allampati',
+      signatory_title VARCHAR(255) DEFAULT 'Director of Academics',
+      status VARCHAR(50) DEFAULT 'ACTIVE',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  try { await pgPool.query(`ALTER TABLE courses ADD COLUMN modules_content TEXT NULL`); } catch (e) {}
+  try { await pgPool.query(`ALTER TABLE courses ADD COLUMN quiz_data TEXT NULL`); } catch (e) {}
   try { await pgPool.query(`ALTER TABLE enrollments ADD COLUMN passed INT DEFAULT 0`); } catch (e) {}
   try { await pgPool.query(`ALTER TABLE enrollments ADD COLUMN attempts_count INT DEFAULT 0`); } catch (e) {}
   try { await pgPool.query(`ALTER TABLE enrollments ADD COLUMN highest_score INT DEFAULT 0`); } catch (e) {}
   try { await pgPool.query(`ALTER TABLE enrollments ADD COLUMN completed_modules TEXT NULL`); } catch (e) {}
   try { await pgPool.query(`ALTER TABLE enrollments ADD COLUMN start_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP`); } catch (e) {}
-
-  try {
-    await pgPool.query(`
-      CREATE TABLE IF NOT EXISTS certificates (
-        certificate_id VARCHAR(100) PRIMARY KEY,
-        user_id INT NOT NULL,
-        user_name VARCHAR(255) NOT NULL,
-        user_email VARCHAR(255) NOT NULL,
-        course_id INT NOT NULL,
-        course_title VARCHAR(255) NOT NULL,
-        course_duration VARCHAR(50) NOT NULL,
-        start_date VARCHAR(100) NOT NULL DEFAULT '',
-        completion_date VARCHAR(100) NOT NULL DEFAULT '',
-        issue_date VARCHAR(100) NOT NULL,
-        score INT DEFAULT 100,
-        verification_hash VARCHAR(255) NOT NULL,
-        signatory_name VARCHAR(255) DEFAULT 'Neethu Allampati',
-        signatory_title VARCHAR(255) DEFAULT 'Director of Academics',
-        status VARCHAR(50) DEFAULT 'ACTIVE',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-  } catch (e) {
-    await pgPool.query('DROP TABLE IF EXISTS certificates CASCADE');
-    await pgPool.query(`
-      CREATE TABLE IF NOT EXISTS certificates (
-        certificate_id VARCHAR(100) PRIMARY KEY,
-        user_id INT NOT NULL,
-        user_name VARCHAR(255) NOT NULL,
-        user_email VARCHAR(255) NOT NULL,
-        course_id INT NOT NULL,
-        course_title VARCHAR(255) NOT NULL,
-        course_duration VARCHAR(50) NOT NULL,
-        start_date VARCHAR(100) NOT NULL DEFAULT '',
-        completion_date VARCHAR(100) NOT NULL DEFAULT '',
-        issue_date VARCHAR(100) NOT NULL,
-        score INT DEFAULT 100,
-        verification_hash VARCHAR(255) NOT NULL,
-        signatory_name VARCHAR(255) DEFAULT 'Neethu Allampati',
-        signatory_title VARCHAR(255) DEFAULT 'Director of Academics',
-        status VARCHAR(50) DEFAULT 'ACTIVE',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-  }
-
   try { await pgPool.query(`ALTER TABLE certificates ADD COLUMN start_date VARCHAR(100) NOT NULL DEFAULT ''`); } catch (e) {}
   try { await pgPool.query(`ALTER TABLE certificates ADD COLUMN completion_date VARCHAR(100) NOT NULL DEFAULT ''`); } catch (e) {}
   try { await pgPool.query(`ALTER TABLE certificates ADD COLUMN score INT DEFAULT 100`); } catch (e) {}
