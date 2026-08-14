@@ -11,13 +11,14 @@ let mysqlPool = null;
 let sqliteDb = null;
 
 async function initDB() {
-  // 1. Try Render / Cloud PostgreSQL first if DATABASE_URL or PGHOST is present
-  if (process.env.DATABASE_URL || process.env.PGHOST) {
-    const connectionString = process.env.DATABASE_URL;
+  const cloudDbUrl = process.env.DATABASE_URL || 'postgres://wedigo_db_user:qEyAa4xxng6pDoiKjDMvGYHLjJA6KQ6C@dpg-d9va2t142hec738h81b0-a.oregon-postgres.render.com/wedigo_db';
+
+  // 1. Try Render / Cloud PostgreSQL first
+  if (process.env.DATABASE_URL || process.env.RENDER || process.env.NODE_ENV === 'production' || process.env.PGHOST) {
     try {
       pgPool = new Pool({
-        connectionString,
-        ssl: connectionString && (connectionString.includes('localhost') || connectionString.includes('127.0.0.1')) ? false : { rejectUnauthorized: false }
+        connectionString: cloudDbUrl,
+        ssl: cloudDbUrl.includes('localhost') || cloudDbUrl.includes('127.0.0.1') ? false : { rejectUnauthorized: false }
       });
       await pgPool.query('SELECT NOW()');
       console.log('[Database] Connected to PostgreSQL Cloud Database on Render (SSL Mode)!');
@@ -28,7 +29,7 @@ async function initDB() {
     } catch (err) {
       console.warn(`[Database Warning] PostgreSQL SSL connection failed (${err.message}). Retrying with ssl: false...`);
       try {
-        pgPool = new Pool({ connectionString, ssl: false });
+        pgPool = new Pool({ connectionString: cloudDbUrl, ssl: false });
         await pgPool.query('SELECT NOW()');
         console.log('[Database] Connected to PostgreSQL Cloud Database on Render (Non-SSL Mode)!');
         dbMode = 'PG';
