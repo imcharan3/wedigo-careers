@@ -131,6 +131,9 @@ async function initPostgresTables() {
       role VARCHAR(50) NOT NULL DEFAULT 'admin',
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+  `);
+
+  await pgPool.query(`
     CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
       name VARCHAR(255) NOT NULL,
@@ -139,6 +142,9 @@ async function initPostgresTables() {
       role VARCHAR(50) NOT NULL DEFAULT 'student',
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+  `);
+
+  await pgPool.query(`
     CREATE TABLE IF NOT EXISTS courses (
       id SERIAL PRIMARY KEY,
       title VARCHAR(255) NOT NULL,
@@ -150,6 +156,12 @@ async function initPostgresTables() {
       quiz_data TEXT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+  `);
+
+  try { await pgPool.query(`ALTER TABLE courses ADD COLUMN modules_content TEXT NULL`); } catch (e) {}
+  try { await pgPool.query(`ALTER TABLE courses ADD COLUMN quiz_data TEXT NULL`); } catch (e) {}
+
+  await pgPool.query(`
     CREATE TABLE IF NOT EXISTS enrollments (
       id SERIAL PRIMARY KEY,
       user_id INT NOT NULL,
@@ -165,6 +177,15 @@ async function initPostgresTables() {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(user_id, course_id)
     );
+  `);
+
+  try { await pgPool.query(`ALTER TABLE enrollments ADD COLUMN passed INT DEFAULT 0`); } catch (e) {}
+  try { await pgPool.query(`ALTER TABLE enrollments ADD COLUMN attempts_count INT DEFAULT 0`); } catch (e) {}
+  try { await pgPool.query(`ALTER TABLE enrollments ADD COLUMN highest_score INT DEFAULT 0`); } catch (e) {}
+  try { await pgPool.query(`ALTER TABLE enrollments ADD COLUMN completed_modules TEXT NULL`); } catch (e) {}
+  try { await pgPool.query(`ALTER TABLE enrollments ADD COLUMN start_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP`); } catch (e) {}
+
+  await pgPool.query(`
     CREATE TABLE IF NOT EXISTS certificates (
       certificate_id VARCHAR(100) PRIMARY KEY,
       user_id INT NOT NULL,
@@ -184,6 +205,10 @@ async function initPostgresTables() {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `);
+
+  try { await pgPool.query(`ALTER TABLE certificates ADD COLUMN start_date VARCHAR(100) NOT NULL DEFAULT ''`); } catch (e) {}
+  try { await pgPool.query(`ALTER TABLE certificates ADD COLUMN completion_date VARCHAR(100) NOT NULL DEFAULT ''`); } catch (e) {}
+  try { await pgPool.query(`ALTER TABLE certificates ADD COLUMN score INT DEFAULT 100`); } catch (e) {}
 }
 
 async function initMySQLTables() {
