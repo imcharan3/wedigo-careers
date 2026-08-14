@@ -5,7 +5,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const path = require('path');
 const crypto = require('crypto');
-const { initDB, query, getMode } = require('./db');
+const { initDB, query, getMode, getPgError } = require('./db');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -58,10 +58,6 @@ function calculateStartDate(completionDateObj, durationStr) {
     month: 'long',
     day: 'numeric'
   });
-}
-
-const { initDB, query, getMode, getPgError } = require('./db');
-
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', version: '2026-08-14-v3', mode: getMode(), pgError: getPgError() });
 });
