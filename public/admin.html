@@ -29,9 +29,10 @@
         <span class="card-tag" style="background: rgba(99, 102, 241, 0.2); color: var(--primary-glow);">System Overview</span>
         <h1>Admin Control Dashboard</h1>
       </div>
-      <div style="display: flex; gap: 0.75rem;">
-        <button onclick="App.openModal('addCourseModal')" class="btn btn-primary"><i class="fas fa-plus-circle"></i> Add New Course</button>
-        <button onclick="App.openModal('manualIssueModal')" class="btn btn-gold"><i class="fas fa-award"></i> Issue Manual Certificate</button>
+      <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+        <button onclick="App.openModal('addAdminModal')" class="btn btn-secondary" style="background: rgba(255,255,255,0.08); border: 1px solid var(--border-light);"><i class="fas fa-user-shield"></i> Add Admin</button>
+        <button onclick="App.openModal('addCourseModal')" class="btn btn-primary"><i class="fas fa-plus-circle"></i> Add Course</button>
+        <button onclick="App.openModal('manualIssueModal')" class="btn btn-gold"><i class="fas fa-award"></i> Issue Manual Cert</button>
       </div>
     </div>
 
@@ -149,6 +150,31 @@
           <textarea id="newCourseDesc" class="form-input" rows="3" placeholder="Brief course description..." required style="resize: vertical;"></textarea>
         </div>
         <button type="submit" class="btn btn-primary" style="width: 100%;">Create Course</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ADD ADMIN MODAL -->
+  <div id="addAdminModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3><i class="fas fa-user-shield"></i> Add Platform Administrator</h3>
+        <button onclick="App.closeModal('addAdminModal')" class="modal-close">&times;</button>
+      </div>
+      <form onsubmit="Admin.handleAddAdmin(event)">
+        <div class="form-group">
+          <label class="form-label">Admin Full Name</label>
+          <input type="text" id="adminName" class="form-input" placeholder="Neethu Allampati" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Admin Email</label>
+          <input type="email" id="adminEmail" class="form-input" placeholder="admin@wedigocareers.com" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" id="adminPassword" class="form-input" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Create Admin User</button>
       </form>
     </div>
   </div>

@@ -185,6 +185,35 @@ const Admin = {
     } catch (err) {
       alert('Failed to issue manual certificate.');
     }
+  },
+
+  async handleAddAdmin(e) {
+    e.preventDefault();
+    const name = document.getElementById('adminName').value;
+    const email = document.getElementById('adminEmail').value;
+    const password = document.getElementById('adminPassword').value;
+
+    try {
+      const res = await fetch('/api/admin/create-admin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${Auth.getToken()}`
+        },
+        body: JSON.stringify({ name, email, password })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(data.message);
+        App.closeModal('addAdminModal');
+        this.loadUsers();
+        this.loadStats();
+      } else {
+        alert(data.error);
+      }
+    } catch (err) {
+      alert('Failed to create admin user.');
+    }
   }
 };
 

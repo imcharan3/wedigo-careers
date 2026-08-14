@@ -441,6 +441,24 @@ app.get('/api/admin/certificates', authenticateToken, requireAdmin, async (req, 
   }
 });
 
+app.post('/api/admin/create-admin', authenticateToken, requireAdmin, async (req, res) => {
+  const { name, email, password } = req.body;
+  if (!name || !email || !password) {
+    return res.status(400).json({ error: 'All fields are required.' });
+  }
+
+  const hashedPassword = bcrypt.hashSync(password, 10);
+  try {
+    await query(
+      'INSERT INTO admins (name, email, password, role) VALUES (?, ?, ?, ?)',
+      [name, email, hashedPassword, 'admin']
+    );
+    res.json({ message: 'Admin account created successfully!' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to create admin account.' });
+  }
+});
+
 app.post('/api/admin/issue-manual', authenticateToken, requireAdmin, async (req, res) => {
   const { userName, userEmail, courseTitle, courseDuration } = req.body;
   if (!userName || !userEmail || !courseTitle || !courseDuration) {
