@@ -13,21 +13,31 @@ let sqliteDb = null;
 async function initDB() {
   // 1. Try Render / Cloud PostgreSQL first if DATABASE_URL or PGHOST is present
   if (process.env.DATABASE_URL || process.env.PGHOST) {
+    const connectionString = process.env.DATABASE_URL;
     try {
-      const connectionString = process.env.DATABASE_URL;
       pgPool = new Pool({
         connectionString,
-        ssl: connectionString && connectionString.includes('localhost') ? false : { rejectUnauthorized: false }
+        ssl: connectionString && (connectionString.includes('localhost') || connectionString.includes('127.0.0.1')) ? false : { rejectUnauthorized: false }
       });
-
       await pgPool.query('SELECT NOW()');
-      console.log('[Database] Connected to PostgreSQL Cloud Database on Render!');
+      console.log('[Database] Connected to PostgreSQL Cloud Database on Render (SSL Mode)!');
       dbMode = 'PG';
       await initPostgresTables();
       await seedPostgresData();
       return;
     } catch (err) {
-      console.warn(`[Database Warning] PostgreSQL connection failed: ${err.message}`);
+      console.warn(`[Database Warning] PostgreSQL SSL connection failed (${err.message}). Retrying with ssl: false...`);
+      try {
+        pgPool = new Pool({ connectionString, ssl: false });
+        await pgPool.query('SELECT NOW()');
+        console.log('[Database] Connected to PostgreSQL Cloud Database on Render (Non-SSL Mode)!');
+        dbMode = 'PG';
+        await initPostgresTables();
+        await seedPostgresData();
+        return;
+      } catch (err2) {
+        console.error(`[Database Error] PostgreSQL connection failed completely: ${err2.message}`);
+      }
     }
   }
 
