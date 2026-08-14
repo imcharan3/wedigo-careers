@@ -61,7 +61,7 @@ function calculateStartDate(completionDateObj, durationStr) {
 }
 
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', version: '2026-08-14-v7', mode: getMode(), pgError: getPgError() });
+  res.json({ status: 'ok', version: '2026-08-14-v8', mode: getMode(), pgError: getPgError() });
 });
 
 // API ROUTES

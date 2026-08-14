@@ -100,8 +100,8 @@ async function query(sql, params = []) {
       .replace(/INSERT IGNORE INTO/gi, 'INSERT INTO')
       .replace(/\?/g, () => `$${++paramIndex}`);
 
-    if (pgSql.toUpperCase().startsWith('INSERT') && !pgSql.toUpperCase().includes('RETURNING')) {
-      pgSql += ' RETURNING id, certificate_id';
+    if (pgSql.trim().toUpperCase().startsWith('INSERT') && !pgSql.toUpperCase().includes('RETURNING')) {
+      pgSql += ' RETURNING *';
     }
 
     const res = await pgPool.query(pgSql, params);
